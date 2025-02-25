@@ -4,15 +4,15 @@ const bodyParser = require("body-parser");
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
-const authRoutes = require("../routes/auth");
-const profileRoutes = require("../routes/profile");
+const authRoutes = require("./routes/auth");
+const profileRoutes = require("./routes/profile");
 if (!process.env.JWT_SECRET) {
   console.error("JWT_SECRET is not defined in environment variables");
   process.exit(1);
 }
 
 const axios = require("axios");
-const User = require("../models/User");
+const User = require("./models/User");
 
 const dbURI = process.env.MONGODB_URI;
 
