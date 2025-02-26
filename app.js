@@ -21,7 +21,14 @@ const app = express();
 // Middleware
 app.use(express.json());
 
-app.use(cors());
+const corsOptions = {
+  origin: 'https://less-pay-frontend.vercel.app', // Allow your frontend domain
+  methods: '*', // Allow all HTTP methods
+  allowedHeaders: 'Content-Type, Authorization', // Allowed headers
+};
+
+app.use(cors(corsOptions));
+
 
 // Middleware to parse JSON
 app.use(bodyParser.json());
