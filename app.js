@@ -23,8 +23,8 @@ app.use(express.json());
 
 const corsOptions = {
   origin: '*',  // Allow all origins
-  methods: '*', // Allow all HTTP methods (GET, POST, PUT, DELETE, etc.)
-  allowedHeaders: 'Content-Type, Authorization', // Allowed headers
+  methods: '*', // Allow all HTTP methods
+  allowedHeaders: 'Content-Type, Authorization, x-auth-token', // Allow custom header 'x-auth-token' along with other headers
 };
 
 app.use(cors(corsOptions));
