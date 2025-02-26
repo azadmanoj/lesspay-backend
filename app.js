@@ -22,12 +22,13 @@ const app = express();
 app.use(express.json());
 
 const corsOptions = {
-  origin: 'http://localhost:3000', // Allow your frontend domain
-  methods: '*', // Allow all HTTP methods
+  origin: '*',  // Allow all origins
+  methods: '*', // Allow all HTTP methods (GET, POST, PUT, DELETE, etc.)
   allowedHeaders: 'Content-Type, Authorization', // Allowed headers
 };
 
 app.use(cors(corsOptions));
+
 
 
 // Middleware to parse JSON
