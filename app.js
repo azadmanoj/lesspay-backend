@@ -30,7 +30,6 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 
-
 // Middleware to parse JSON
 app.use(bodyParser.json());
 
@@ -153,6 +152,17 @@ app.post("/api/generate-payment-link", async (req, res) => {
   }
 });
 
+// Endpoint to fetch all users
+app.get("/api/users", async (req, res) => {
+  try {
+    const users = await User.find(); // Find all users in MongoDB
+    res.json(users); // Send the list of users as JSON response
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    res.status(500).json({ error: "Failed to fetch users" });
+  }
+});
+
 // Webhook endpoint for payment callbacks
 app.post("/api/payment-callback", (req, res) => {
   // Handle the payment callback from Mswipe
@@ -173,14 +183,14 @@ app.put("/api/update-profile", async (req, res) => {
     const { phoneNumber, fullName, email, bankDetails } = req.body;
 
     // Validate phoneNumber (which is actually the phone number)
-    if (!phoneNumber) {
-      return res.status(400).json({ error: "phoneNumber is required" });
+    if (!email) {
+      return res.status(400).json({ error: "email is required" });
     }
 
     // Find user by phone number instead of _id
-    const user = await User.findOne({ phoneNumber: phoneNumber });
+    const user = await User.findOne({ email: email });
     if (!user) {
-      return res.status(404).json({ error: "Phone Number not found" });
+      return res.status(404).json({ error: "email  not found" });
     }
 
     // Update fields if provided
