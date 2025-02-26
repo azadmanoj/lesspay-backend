@@ -14,6 +14,7 @@ const transactionSchema = new mongoose.Schema({
   smslink: {
     type: String,
   },
+
   paymentStatus: {
     type: String,
     enum: ["pending", "success", "failed"],
@@ -35,8 +36,15 @@ const bankDetailsSchema = new mongoose.Schema({
 const userSchema = new mongoose.Schema({
   phoneNumber: {
     type: String,
-    sparse: true,  // Allows multiple nulls
+    sparse: true, // Allows multiple nulls
+    default: "",
   },
+
+  userRole: {
+    type: String,
+    default: "User",
+  },
+
   password: {
     type: String,
     required: true,
@@ -56,6 +64,7 @@ const userSchema = new mongoose.Schema({
   fullName: {
     type: String,
     trim: true,
+    default: "",
   },
   email: {
     type: String,
