@@ -22,10 +22,19 @@ const app = express();
 app.use(express.json());
 
 const corsOptions = {
-  origin: 'https://less-pay-frontend.vercel.app', // Allow your frontend domain
+  origin: function (origin, callback) {
+    // Allow both production and development origins
+    if (origin === 'https://less-pay-frontend.vercel.app' || origin === 'http://localhost:3000') {
+      callback(null, true); // Allow the request
+    } else {
+      callback(new Error('Not allowed by CORS')); // Reject other origins
+    }
+  },
   methods: '*', // Allow all HTTP methods
   allowedHeaders: 'Content-Type, Authorization', // Allowed headers
 };
+
+app.use(cors(corsOptions));
 
 app.use(cors(corsOptions));
 
