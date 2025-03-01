@@ -337,4 +337,21 @@ router.post(
   }
 );
 
+router.post("/send-email", async (req, res) => {
+  const { name, email, message } = req.body;
+
+  const to = "manuazad6@gmail.com";
+  const subject = `New message from ${name}`;
+  const text = message;
+  const htmlData = `<p>Name: ${name}</p><p>Email: ${email}</p><p>Message: ${message}</p>`;
+
+  try {
+    await sendEmail(to, subject, text, htmlData);
+    res.status(200).send("Message sent successfully!");
+  } catch (error) {
+    console.error("Error sending email:", error);
+    res.status(500).send("Failed to send message");
+  }
+});
+
 module.exports = router;

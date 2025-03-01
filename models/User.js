@@ -14,10 +14,15 @@ const transactionSchema = new mongoose.Schema({
   smslink: {
     type: String,
   },
-
+  email: {
+    type: String,
+    trim: true,
+    lowercase: true,
+    match: [/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/, "Please enter a valid email"],
+  },
   paymentStatus: {
     type: String,
-    enum: ["pending", "success", "failed"],
+    enum: ["pending", "completed", "failed"],
     default: "pending",
   },
   createdAt: {

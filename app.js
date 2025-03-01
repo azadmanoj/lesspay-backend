@@ -1,5 +1,6 @@
 require("dotenv").config();
 const bodyParser = require("body-parser");
+const cron = require("node-cron");
 
 const express = require("express");
 const cors = require("cors");
@@ -22,13 +23,12 @@ const app = express();
 app.use(express.json());
 
 const corsOptions = {
-  origin: '*',  // Allow all origins
-  methods: '*', // Allow all HTTP methods
-  allowedHeaders: 'Content-Type, Authorization, x-auth-token', // Allow custom header 'x-auth-token' along with other headers
+  origin: "*", // Allow all origins
+  methods: "*", // Allow all HTTP methods
+  allowedHeaders: "Content-Type, Authorization, x-auth-token", // Allow custom header 'x-auth-token' along with other headers
 };
 
 app.use(cors(corsOptions));
-
 
 // Middleware to parse JSON
 app.use(bodyParser.json());
@@ -134,11 +134,25 @@ app.post("/api/generate-payment-link", async (req, res) => {
           txn_id: response.data.txn_id,
           smslink: response.data.smslink,
           paymentStatus: "pending",
-          paymentTransactionId: transID, // Use the extracted transID
+          paymentTransactionId: transID,
+          email: email_id,
         });
 
         // Save the updated user document
         await user.save();
+
+        // Step 5: Automatically update payment status
+        const status = await updatePaymentStatus(transID);
+
+        // Update transaction status in the user's transactions array
+        const transaction = user.transactions.find(
+          (txn) => txn.paymentTransactionId === transID
+        );
+        if (transaction) {
+          transaction.paymentStatus = status; // Update status to 'completed', 'pending', or 'failed'
+          await user.save();
+        }
+
         res.json(response.data); // Return the payment link response
       } else {
         res.status(404).json({ error: "User not found" });
@@ -152,7 +166,62 @@ app.post("/api/generate-payment-link", async (req, res) => {
   }
 });
 
-// Endpoint to fetch all users
+const updatePaymentStatus = async (paymentTransactionId) => {
+  try {
+    const response = await axios.post(
+      `${UAT_BASE_URL}/getPBLTransactionDetails`,
+      { id: paymentTransactionId },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (response.data && response.data.Data && response.data.Data.length > 0) {
+      const { Payment_Status } = response.data.Data[0]; // Payment status from the response
+
+      // Determine payment status
+      let status;
+      if (Payment_Status === 1) {
+        status = "completed";
+      } else if (Payment_Status === 2) {
+        status = "pending";
+      } else {
+        status = "failed";
+      }
+
+      return status;
+    } else {
+      throw new Error("Payment status not found");
+    }
+  } catch (error) {
+    console.error("Error fetching payment status:", error);
+    throw new Error("Failed to fetch payment status");
+  }
+};
+
+// Cron job to check the payment status every 2 sEC
+cron.schedule("*/10 * * * *", async () => {
+  try {
+    const users = await User.find(); // Get all users
+
+    for (let user of users) {
+      // Check each transaction of the user
+      for (let txn of user.transactions) {
+        if (txn.paymentStatus === "pending") {
+          // If the transaction status is 'pending', check the payment status
+          const status = await updatePaymentStatus(txn.paymentTransactionId);
+          txn.paymentStatus = status; // Update status to 'completed', 'pending', or 'failed'
+          await user.save(); // Save the updated user with the new transaction status
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Error updating payment statuses:", error);
+  }
+});
+
 app.get("/api/users", async (req, res) => {
   try {
     const users = await User.find(); // Find all users in MongoDB
@@ -237,7 +306,6 @@ app.post("/api/payment-status", async (req, res) => {
   if (!paymentTransactionId) {
     return res.status(400).json({ error: "paymentTransactionId is required" });
   }
-  console.log("🚀 ~ app.post ~ paymentTransactionId:", paymentTransactionId);
 
   try {
     // Make an API call to get payment status with 'application/json' content type
@@ -250,11 +318,9 @@ app.post("/api/payment-status", async (req, res) => {
         },
       }
     );
-    console.log("🚀 ~ app.post ~ response:", response.data);
 
     if (response.data && response.data.Data && response.data.Data.length > 0) {
       const { Payment_Status } = response.data.Data[0]; // Access the first item in the 'Data' array
-      console.log("🚀 ~ app.post ~ Payment_Status:", Payment_Status);
 
       // Determine the payment status based on the response
       let status;
@@ -275,6 +341,28 @@ app.post("/api/payment-status", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch payment status" });
   }
 });
+
+// Run the payment status check every 2 seconds
+setInterval(async () => {
+  try {
+    const users = await User.find(); // Get all users
+
+    for (let user of users) {
+      // Check each transaction of the user
+      for (let txn of user.transactions) {
+        if (txn.paymentStatus === "pending") {
+          // If the transaction status is 'pending', check the payment status
+          const status = await updatePaymentStatus(txn.paymentTransactionId);
+          txn.paymentStatus = status; // Update status to 'completed', 'pending', or 'failed'
+          await user.save(); // Save the updated user with the new transaction status
+        }
+      }
+    }
+
+  } catch (error) {
+    console.error("Error updating payment statuses:", error);
+  }
+}, 2000);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
