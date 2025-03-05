@@ -5,6 +5,10 @@ const transactionSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  receiveAmount: {
+    type: Number,
+    required: false,
+  },
   txn_id: {
     type: String,
   },
@@ -21,6 +25,12 @@ const transactionSchema = new mongoose.Schema({
     match: [/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/, "Please enter a valid email"],
   },
   paymentStatus: {
+    type: String,
+    enum: ["pending", "completed", "failed"],
+    default: "pending",
+  },
+
+  paymentTransferStatus: {
     type: String,
     enum: ["pending", "completed", "failed"],
     default: "pending",

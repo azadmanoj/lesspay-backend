@@ -48,13 +48,9 @@ router.post(
       // Check if the user exists in the database
       const user = await User.findOne({ email });
       if (!user) {
-        return res.status(400).json({ message: "Invalid credentials" });
+        return res.status(400).json({ message: "User Not Found" });
       }
 
-      // Check if the user is verified
-      if (!user.isVerified) {
-        return res.status(400).json({ message: "User is not verified" });
-      }
 
       // Compare the password
       const isMatch = await bcrypt.compare(password, user.password);
@@ -71,6 +67,7 @@ router.post(
         token,
         id: user._id, // Send user _id
         email: user.email, // Send email
+        isVerified: user.isVerified, // Send email
       });
     } catch (error) {
       console.error(error);

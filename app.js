@@ -46,15 +46,14 @@ mongoose
     process.exit(1); // Exit process if DB connection fails
   });
 
-const UAT_BASE_URL = "https://dcuat.mswipetech.co.in/ipg/api";
-const LIVE_BASE_URL = "https://pbl.mswipe.com/ipg/api";
+const LIVE_BASE_URL = process.env.MSWIPE_BASE_URL;
 
 const config = {
-  clientId: "MSW*PBLBri9401004085",
-  custcode: "9401004085",
+  clientId: process.env.MSWIPE_CLIENT_ID,
+  custcode: process.env.MSWIPE_CUST_CODE,
   channelId: "pbl",
   applId: "api",
-  password: "0376e5f81ed306a952d53c3caf3f6c14a1d7d69dd2a3b1b6d7b45f32138e086c",
+  password: process.env.MSWIPE_PASSWORD,
 };
 
 // Generate Auth Token
@@ -69,7 +68,7 @@ app.post("/api/generate-token", async (req, res) => {
     };
 
     const response = await axios.post(
-      `${UAT_BASE_URL}/CreatePBLAuthToken`,
+      `${LIVE_BASE_URL}/CreatePBLAuthToken`,
       tokenPayload
     );
     res.json(response.data);
@@ -82,11 +81,11 @@ app.post("/api/generate-token", async (req, res) => {
 // Generate Payment Link
 app.post("/api/generate-payment-link", async (req, res) => {
   try {
-    const { amount, mobileno, email_id, invoice_id, userId, id } = req.body;
+    const { amount,receiveAmount, mobileno, email_id, invoice_id, userId, id } = req.body;
 
     // Step 1: Generate Token first
     const tokenResponse = await axios.post(
-      `${UAT_BASE_URL}/CreatePBLAuthToken`,
+      `${LIVE_BASE_URL}/CreatePBLAuthToken`,
       {
         userId,
         clientId: config.clientId,
@@ -95,6 +94,8 @@ app.post("/api/generate-payment-link", async (req, res) => {
         channelId: config.channelId,
       }
     );
+
+
 
     if (tokenResponse.data && tokenResponse.data.token) {
       const token = tokenResponse.data.token;
@@ -117,7 +118,7 @@ app.post("/api/generate-payment-link", async (req, res) => {
 
       // Step 3: Make the API call to generate the payment link
       const response = await axios.post(
-        `${UAT_BASE_URL}/MswipePayment`,
+        `${LIVE_BASE_URL}/MswipePayment`,
         paymentLinkPayload
       );
 
@@ -131,9 +132,11 @@ app.post("/api/generate-payment-link", async (req, res) => {
         // Update the transaction object with the extracted transID
         user.transactions.push({
           amount,
+          receiveAmount,
           txn_id: response.data.txn_id,
           smslink: response.data.smslink,
           paymentStatus: "pending",
+          paymentTransferStatus: "pending",
           paymentTransactionId: transID,
           email: email_id,
         });
@@ -169,7 +172,7 @@ app.post("/api/generate-payment-link", async (req, res) => {
 const updatePaymentStatus = async (paymentTransactionId) => {
   try {
     const response = await axios.post(
-      `${UAT_BASE_URL}/getPBLTransactionDetails`,
+      `${LIVE_BASE_URL}/getPBLTransactionDetails`,
       { id: paymentTransactionId },
       {
         headers: {
@@ -299,6 +302,59 @@ app.put("/api/update-profile", async (req, res) => {
   }
 });
 
+
+app.put("/api/update-transactions", async (req, res) => {
+  try {
+    const { email, txn_id, paymentTransferStatus } = req.body;
+
+ 
+    // Find user by email
+    const user = await User.findOne({ email: email });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Find the transaction by txn_id
+    const transaction = user.transactions.find((txn) => txn.txn_id === txn_id);
+    if (!transaction) {
+      return res.status(404).json({ error: "Transaction not found" });
+    }
+
+    // Update the paymentTransferStatus for the transaction
+    transaction.paymentTransferStatus = paymentTransferStatus;
+
+    // Save the updated user document
+    await user.save();
+
+    // Return the updated user profile without sensitive data
+    const userResponse = {
+      phoneNumber: user.phoneNumber,
+      fullName: user.fullName,
+      email: user.email,
+      bankDetails: user.bankDetails,
+      transactions: user.transactions.map(txn => ({
+        txn_id: txn.txn_id,
+        amount: txn.amount,
+        paymentStatus: txn.paymentStatus,
+        paymentTransferStatus: txn.paymentTransferStatus,
+      })),
+      isVerified: user.isVerified,
+    };
+
+    res.json({
+      message: "Transaction paymentTransferStatus updated successfully",
+      user: userResponse,
+    });
+  } catch (error) {
+    console.error("Profile update error:", error);
+    res.status(500).json({
+      error: "Failed to update payment transfer status",
+      details: error.message,
+    });
+  }
+});
+
+
 // Function to fetch the payment status from Mswipe API
 app.post("/api/payment-status", async (req, res) => {
   const { paymentTransactionId } = req.body;
@@ -310,7 +366,7 @@ app.post("/api/payment-status", async (req, res) => {
   try {
     // Make an API call to get payment status with 'application/json' content type
     const response = await axios.post(
-      `${UAT_BASE_URL}/getPBLTransactionDetails`,
+      `${LIVE_BASE_URL}/getPBLTransactionDetails`,
       { id: paymentTransactionId }, // Send JSON object in the body
       {
         headers: {
