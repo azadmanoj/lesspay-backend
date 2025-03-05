@@ -337,7 +337,7 @@ router.post(
 router.post("/send-email", async (req, res) => {
   const { name, email, message } = req.body;
 
-  const to = "manuazad6@gmail.com";
+  const to = "support@paymentbuddy.in";
   const subject = `New message from ${name}`;
   const text = message;
   const htmlData = `<p>Name: ${name}</p><p>Email: ${email}</p><p>Message: ${message}</p>`;
