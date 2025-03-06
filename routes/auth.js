@@ -84,9 +84,7 @@ router.post("/signup", validateSignup, async (req, res) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { email, password } = req.body;
-    console.log("🚀 ~ router.post ~ email:", email)
-    console.log("🚀 ~ router.post ~ password:", password)
+    const { email, password ,fullName} = req.body;
 
     // Check if user already exists
     let user = await User.findOne({ email });
@@ -108,6 +106,7 @@ router.post("/signup", validateSignup, async (req, res) => {
         expiresAt: otpExpiry,
       },
       phoneNumber: "",
+      fullName,
     });
 
     await user.save();

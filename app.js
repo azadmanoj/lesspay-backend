@@ -268,6 +268,7 @@ app.put("/api/update-profile", async (req, res) => {
     // Update fields if provided
     if (fullName) user.fullName = fullName;
     if (email) user.email = email;
+    if (phoneNumber) user.phoneNumber = phoneNumber;
     if (bankDetails) {
       user.bankDetails = {
         accountHolder: bankDetails.accountHolder,
