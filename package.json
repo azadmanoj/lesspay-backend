@@ -1,5 +1,5 @@
 {
-  "name": "lesspay",
+  "name": "paymentbuddy",
   "version": "1.0.0",
   "description": "Backend for user authentication",
   "main": "app.js",

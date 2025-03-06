@@ -85,6 +85,8 @@ router.post("/signup", validateSignup, async (req, res) => {
     }
 
     const { email, password } = req.body;
+    console.log("🚀 ~ router.post ~ email:", email)
+    console.log("🚀 ~ router.post ~ password:", password)
 
     // Check if user already exists
     let user = await User.findOne({ email });
@@ -111,8 +113,8 @@ router.post("/signup", validateSignup, async (req, res) => {
     await user.save();
 
     // Send OTP Email
-    const subject = "LessPay Verification Code";
-    const text = `Your LessPay verification code is: ${otp}. Valid for 10 minutes.`;
+    const subject = "PaymentBuddy Verification Code";
+    const text = `Your PaymentBuddy verification code is: ${otp}. Valid for 10 minutes.`;
     await sendEmail(email, subject, text);
 
     res.status(201).json({
@@ -210,8 +212,8 @@ router.post(
       await user.save();
 
       // Send OTP via Email
-      const subject = "LessPay Password Reset Code";
-      const text = `Your LessPay password reset code is: ${otp}. Valid for 10 minutes.`;
+      const subject = "PaymentBuddy Password Reset Code";
+      const text = `Your PaymentBuddy password reset code is: ${otp}. Valid for 10 minutes.`;
       await sendEmail(email, subject, text);
 
       res.json({
@@ -337,7 +339,7 @@ router.post(
 router.post("/send-email", async (req, res) => {
   const { name, email, message } = req.body;
 
-  const to = "support@paymentbuddy.in";
+  const to = process.env.SUPPORT_EMAIL;
   const subject = `New message from ${name}`;
   const text = message;
   const htmlData = `<p>Name: ${name}</p><p>Email: ${email}</p><p>Message: ${message}</p>`;

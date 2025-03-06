@@ -10,7 +10,7 @@ const sendSMS = async (phone, message) => {
         const response = await axios.post('https://api.smtp2go.com/v3/sms/send', {
             api_key: process.env.SMTP2GO_API_KEY,
             to: phone,
-            sender: 'LessPay',
+            sender: 'PaymentBuddy',
             message: message
         });
 

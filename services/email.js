@@ -2,15 +2,17 @@ const nodemailer = require("nodemailer");
 
 const sendEmail = async (to, subject, text,html) => {
   const transporter = nodemailer.createTransport({
-    service: "gmail", // You can use a different email service
+    host: "smtpout.secureserver.net", // GoDaddy SMTP server
+    port: 465, // Use 465 for SSL or 587 for TLS
+    secure: true, // Use SSL
     auth: {
-      user: "support@paymentbuddy.in", // Add your email address here
-      pass: "lzcvwttrtjaswbvj", // Add your email password here
+      user: process.env.SUPPORT_EMAIL, // Your GoDaddy email address
+      pass: process.env.EMAIL_PASSWORD, // Your GoDaddy email password
     },
   });
 
   const mailOptions = {
-    from: process.env.EMAIL_USER,
+    from: process.env.SUPPORT_EMAIL,
     to,
     subject,
     text,
