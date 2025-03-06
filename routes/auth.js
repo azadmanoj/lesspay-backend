@@ -352,4 +352,140 @@ router.post("/send-email", async (req, res) => {
   }
 });
 
+
+router.get("/users", async (req, res) => {
+  try {
+    const users = await User.find(); // Find all users in MongoDB
+    res.json(users); // Send the list of users as JSON response
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    res.status(500).json({ error: "Failed to fetch users" });
+  }
+});
+
+// Webhook endpoint for payment callbacks
+router.post("/payment-callback", (req, res) => {
+  // Handle the payment callback from Mswipe
+  console.log("Payment callback received:", req.body);
+
+  // Process the payment status
+  const { TRAN_STATUS, IPG_ID, TranAmount, ME_InvNo } = req.body;
+
+  
+
+  res.json({ status: "success" });
+});
+
+// Update User Profile
+router.put("/update-profile", async (req, res) => {
+  try {
+    const { phoneNumber, fullName, email, bankDetails } = req.body;
+
+    // Validate phoneNumber (which is actually the phone number)
+    if (!email) {
+      return res.status(400).json({ error: "email is required" });
+    }
+
+    // Find user by phone number instead of _id
+    const user = await User.findOne({ email: email });
+    if (!user) {
+      return res.status(404).json({ error: "email  not found" });
+    }
+
+    // Update fields if provided
+    if (fullName) user.fullName = fullName;
+    if (email) user.email = email;
+    if (phoneNumber) user.phoneNumber = phoneNumber;
+    if (bankDetails) {
+      user.bankDetails = {
+        accountHolder: bankDetails.accountHolder,
+        accountNumber: bankDetails.accountNumber,
+        ifscCode: bankDetails.ifscCode,
+        bankName: bankDetails.bankName,
+      };
+    }
+
+    // Save the updated user
+    await user.save();
+
+    // Return updated user without sensitive information
+    const userResponse = {
+      phoneNumber: user.phoneNumber,
+      fullName: user.fullName,
+      email: user.email,
+      bankDetails: user.bankDetails,
+      isVerified: user.isVerified,
+    };
+
+    res.json({
+      message: "Profile updated successfully",
+      user: userResponse,
+    });
+  } catch (error) {
+    console.error("Profile update error:", error);
+    res.status(500).json({
+      error: "Failed to update profile",
+      details: error.message,
+    });
+  }
+});
+
+
+router.put("/update-transactions", async (req, res) => {
+  try {
+    const { email, txn_id, paymentTransferStatus } = req.body;
+
+ 
+    // Find user by email
+    const user = await User.findOne({ email: email });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Find the transaction by txn_id
+    const transaction = user.transactions.find((txn) => txn.txn_id === txn_id);
+    if (!transaction) {
+      return res.status(404).json({ error: "Transaction not found" });
+    }
+
+    // Update the paymentTransferStatus for the transaction
+    transaction.paymentTransferStatus = paymentTransferStatus;
+
+    // Save the updated user document
+    await user.save();
+
+    // Return the updated user profile without sensitive data
+    const userResponse = {
+      phoneNumber: user.phoneNumber,
+      fullName: user.fullName,
+      email: user.email,
+      bankDetails: user.bankDetails,
+      transactions: user.transactions.map(txn => ({
+        txn_id: txn.txn_id,
+        amount: txn.amount,
+        paymentStatus: txn.paymentStatus,
+        paymentTransferStatus: txn.paymentTransferStatus,
+      })),
+      isVerified: user.isVerified,
+    };
+
+    res.json({
+      message: "Transaction paymentTransferStatus updated successfully",
+      user: userResponse,
+    });
+  } catch (error) {
+    console.error("Profile update error:", error);
+    res.status(500).json({
+      error: "Failed to update payment transfer status",
+      details: error.message,
+    });
+  }
+});
+
+
+
+
+
+
+
 module.exports = router;
