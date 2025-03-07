@@ -113,7 +113,24 @@ router.post("/signup", validateSignup, async (req, res) => {
 
     // Send OTP Email
     const subject = "PaymentBuddy Verification Code";
-    const text = `Your PaymentBuddy verification code is: ${otp}. Valid for 10 minutes.`;
+    const text = `Dear ${fullName},
+
+I hope this message finds you well.
+
+Please find below your PaymentBuddy verification code:
+
+Verification Code: ${otp}
+
+This code is valid for the next 10 minutes. Kindly use it promptly to complete your verification process.
+
+If you did not request this code or need further assistance, please do not hesitate to contact our support team.
+
+Thank you for using PaymentBuddy.
+
+Best regards,
+PaymentBuddy Support Team
+support@paymentbuddy.in`;
+
     await sendEmail(email, subject, text);
 
     res.status(201).json({
